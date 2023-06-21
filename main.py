@@ -92,7 +92,7 @@ tmpvar = True
 
 def main(driver):
     while True:
-        global terminate_flag, urlold, tmpvar, new_url_s, auto_next_episode, auto_fullscreen, auto_play
+        global terminate_flag, urlold, tmpvar, new_url_s, auto_next_episode, auto_fullscreen, auto_play, episodes
         if "/anime/stream" in str(driver.current_url) and "/episode-" in str(driver.current_url):
             if tmpvar or driver.current_url != urlold:
                 time.sleep(0.5)
@@ -125,12 +125,20 @@ def main(driver):
                     if auto_play:
                         button2.click()
                     if auto_fullscreen:
-                        time.sleep(0.2)
+                        time.sleep(0.4)
                         #driver.find_element(By.XPATH, '//button[@title="Fullscreen"]').click()
                         #driver.find_element(By.CLASS_NAME, 'vjs-fullscreen-control vjs-control vjs-button').click()
                         driver.find_element(By.CSS_SELECTOR, '.vjs-fullscreen-control').click()
+                        time.sleep(0.2)
                     driver.switch_to.default_content()
                     time.sleep(1)
+
+                # Find all the <ul> elements within the <div>
+                ul_elements = driver.find_elements(By.XPATH, "//div[@id='stream']/ul")
+                # Find the <ul> element with the most <li> elements
+                max_ul_element = max(ul_elements, key=lambda ul: len(ul.find_elements(By.TAG_NAME, 'li')))
+                # Get the count of <li> elements within the <ul> with the most elements
+                episodes = len(max_ul_element.find_elements(By.TAG_NAME, 'li')) - 1
 
             try:
                 # iframe = driver.find_element(By.CSS_SELECTOR, 'div.inSiteWebStream iframe')
@@ -169,7 +177,10 @@ def main(driver):
                     if match:
                         number = int(match.group(1))
                         modified_url = re.sub(r'/episode-\d+', '', str(driver.current_url)) + "/episode-"
-                        new_url_s = modified_url + str(number + 1)
+                        if episodes < number+1:
+                            new_url_s = modified_url + str(1)
+                        else:
+                            new_url_s = modified_url + str(number + 1)
                     else:
                         print("No number found in the URL.")
                 driver.switch_to.default_content()
@@ -227,3 +238,5 @@ if __name__ == '__main__':
     main = threading.Thread(target=main, args=[driver])
     main.start()
     gui()
+
+
